@@ -200,38 +200,66 @@ incident_categories = incident_categories[["Category","NumOfIncidents"]]
 n_largest.plot(kind = 'barh')
 plt.show()
 ```
-![Shape1](RackMultipart20220407-4-1p6dmdc_html_8cfb2221e83c551a.gif)
+![](images/plot1.png)
 
 We can see that most of the crimes that take place in San Frisco are related to Theft. Taking this investigation further, we can also explore the areas where this particular crime takes place mostly.
 
-![](RackMultipart20220407-4-1p6dmdc_html_b10b67f2b1c3cdbc.png)
-
-![Shape2](RackMultipart20220407-4-1p6dmdc_html_f18f950f616cea3c.gif)
+```
+Theft_address = incidents[incidents['Category']=="LARCENY/THEFT"]
+Theft_address = Theft_address.groupby(["Address"]).count()
+n_largest = Theft_address['NumOfIncidents'].nlargest(n=10)
+Theft_address.reset_index(inplace = True)
+Theft_address = Theft_address[["Address","NumOfIncidents"]]
+n_largest.plot(kind = 'barh')
+plt.show()
+```
+![](images/plot2.png)
 
 We will now explore the daily calls and daily incidents reported by the police individually to get an insight into how the values of daily incidents and daily calls are changing over time. By removing the Date column from the key, the result is a long and narrow data frame with multiple rows for each date observation in both cases.
 
-![](RackMultipart20220407-4-1p6dmdc_html_8bee4c50d034d178.png)
+```
+daily_incidents = incidents.groupby(["Date"]).count()
+daily_incidents.reset_index(inplace = True)
+daily_incidents = daily_incidents[["Date","NumOfIncidents"]]
 
+
+daily_calls = calls.groupby(["Date"]).count()
+daily_calls.reset_index(inplace = True)
+daily_calls = daily_calls[["Date","NumOfCalls"]]
+```
 Next, we will merge both dataframes on the Date column to get the values of calls and incidents over a particular date in a single dataframe.
 
-![](RackMultipart20220407-4-1p6dmdc_html_9e7a461b40f4c826.png)
-
+```
+shared_dates = pd.merge(daily_incidents, daily_calls, on='Date', how = 'inner')
+```
 Let&#39;s plot both the columns on a scatterplot and apply a linear regression model to get a line of the pattern shown by our data. For that we will fit or data to the regression model first, plot a scatter plot using the data points, and then plot a line using the data points obtained by our model and saved as &quot;Treg1&quot;.
 
-![](RackMultipart20220407-4-1p6dmdc_html_c7750bce0eab3796.png)
+```
+d1 = np.polyfit(shared_dates.index,shared_dates['NumOfCalls'],1)
+f1 = np.poly1d(d1)
+shared_dates.insert(3,'Treg1',f1(shared_dates.index))
+ax = shared_dates.plot.scatter(x = 'Day', y='NumOfCalls')
+shared_dates.plot(y='Treg1',color='Red',ax=ax)
+```
 
-![](RackMultipart20220407-4-1p6dmdc_html_230637aad7f3e49e.png)
+![](images/plot3.png)
 
 Similarly, we will create another linear model for our second column and save the model data points in the column &quot;Treg2&quot;
 
-![](RackMultipart20220407-4-1p6dmdc_html_e76f3d9957f3aa58.png)
-
-![Shape3](RackMultipart20220407-4-1p6dmdc_html_41b7a98af742828b.gif)
+```
+d2 = np.polyfit(shared_dates.index,shared_dates['NumOfIncidents'],1)
+f2 = np.poly1d(d2)
+shared_dates.insert(4,'Treg2',f2(shared_dates.index))
+ax = shared_dates.plot.scatter(x='Day' ,y='NumOfIncidents')
+shared_dates.plot(y='Treg2',color='Red',ax=ax)
+```
+![](images/plot4.png)
 
 To further investigate and quantify the relationship between the two variables, we will use the correlation coefficient technique. We will be using the Pearson correlation coefficient which is the most simple and used coefficient in statistics. It varies from -1 to +1, -1 being a strong negative correlation and +1 being a strong positive correlation. It is used as the default variable by the python function &#39;corr&#39;.
 
-![](RackMultipart20220407-4-1p6dmdc_html_73a00ce5e0982da4.png)
-
+```
+correlation = shared_dates['NumOfIncidents'].corr(shared_dates['NumOfCalls'])
+```
 The correlation coefficient is 0.1469688, which indicates a very weak positive correlation between the two variables.
 
 **Conclusion:**
